@@ -1,0 +1,18 @@
+{
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "isort.importStrategy": "fromEnvironment",
+    "python.analysis.autoImportCompletions": true,
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "flake8.args": ["--config=${workspaceFolder}/setup.cfg"],
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:backend-engineer-interview}/app.db",
+            "name": "app_db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
