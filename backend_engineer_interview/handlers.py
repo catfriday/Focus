@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from datetime import date
 from typing import Generator, Optional
 import connexion.lifecycle  # type: ignore
-from flask import g
+from flask import g, request
 import pydantic
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -131,7 +131,7 @@ def post_application(body: dict) -> tuple[dict, int, dict]:
                 )
             return ({"message": str(e)}, 400, {})
 
-        employee = (
+        employee: Optional[Employee] = (
             session.query(Employee).filter(Employee.id == request_body.employee_id).one_or_none()
         )
 
@@ -149,6 +149,79 @@ def post_application(body: dict) -> tuple[dict, int, dict]:
 
         return (
             ApplicationResponse.model_validate(application).model_dump(),
+            200,
+            {},
+        )
+
+
+class ApplicationSearchResponse(PydanticBaseModel):
+    applications: list[ApplicationResponse]
+    count: int
+    limit: int
+    offset: int
+    next: Optional[str]
+    prev: Optional[str]
+
+
+def search_application() -> None:
+    """
+    Accepts an optional search parameter of an employee's first name, last name, or employee id and returns
+    a list of applications.
+
+    To test, there is a seed script in application_seed.py that will populate the database with
+    some applications.  You can run this script with `python application_seed.py`.
+
+    examples to run from the command line:
+    `curl http://localhost:8000/v1/application` should return all applications.
+    `curl http://localhost:8000/v1/application?search=1` should return the application with the id 1.
+    `curl http://localhost:8000/v1/application?search=John` should return all applications for employees with the first name John.
+    `curl http://localhost:8000/v1/application?search=Lennon` should return all applications for employees with the last name Lennon.
+    """
+    with db_session() as session:
+        search: Optional[str] = request.args.get("search", "")
+        offset: int = int(request.args.get("offset", 0))
+        limit: int = int(request.args.get("limit", 10))
+
+        query = session.query(Application).join(Employee)
+        if search:
+            if search.isdigit():
+                query = query.filter(Employee.id == int(search))
+            else:
+                query = query.filter(
+                    Employee.first_name.ilike(f"%{search}%")
+                    | Employee.last_name.ilike(f"%{search}%")
+                )
+
+        query_count = query.count()
+        applications = query.order_by(Application.id).slice(offset, offset + limit).all()
+
+        next_offset = offset + limit
+        prev_offset = max(offset - limit, 0)
+
+        next_url = (
+            f"/v1/application?search={search}&offset={next_offset}&limit={limit}"
+            if next_offset < query_count
+            else ""
+        )
+        prev_url = (
+            f"/v1/application?search={search}&offset={prev_offset}&limit={limit}"
+            if offset > 0
+            else ""
+        )
+
+        return (
+            ApplicationSearchResponse.model_validate(
+                {
+                    "applications": [
+                        ApplicationResponse.model_validate(app).model_dump() for app in applications
+                    ],
+                    "count": query_count,
+                    "limit": limit,
+                    "offset": offset,
+                    "next": next_url,
+                    "prev": prev_url,
+                }
+            ).model_dump(),
             200,
             {},
         )
