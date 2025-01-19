@@ -164,4 +164,75 @@ paths:
                                 leave_end_date:
                                     type: string
                                     format: date
-        
+        get:
+            tags:
+                - Test Endpoints
+            summary: Search for applications
+            operationId: backend_engineer_interview.handlers.search_application
+            parameters:
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                  description: the search term
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                  description: the number of items to return
+                - name: offset
+                  in: query
+                  schema:
+                      type: integer
+                  description: the number of items to skip
+            responses:
+                '200':
+                    description: Found applications
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    applications:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                    example: 1
+                                                employee_id:
+                                                    type: integer
+                                                    example: 1
+                                                leave_start_date:
+                                                    type: string
+                                                    format: date
+                                                    example: '2022-03-11'
+                                                leave_end_date:
+                                                    type: string
+                                                    format: date
+                                                    example: '2022-03-18'
+                                    count:
+                                        type: integer
+                                        example: 1
+                                    limit:
+                                        type: integer
+                                        example: 10
+                                    offset:
+                                        type: integer
+                                        example: 0
+                                    next:
+                                        type: string
+                                        example: /v1/application?search=term&limit=10&offset=10
+                                    prev:
+                                        type: string
+                                        example: /v1/application?search=term&limit=10&offset=0
+                '400':
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
