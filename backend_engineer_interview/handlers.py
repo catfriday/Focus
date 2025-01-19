@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 import connexion  # type: ignore
 
-from backend_engineer_interview.models import Employee
+from backend_engineer_interview.models import Application, Employee
 
 
 class PydanticBaseModel(pydantic.BaseModel):
@@ -91,7 +91,20 @@ def patch_employee(id: int, body: dict) -> tuple[dict, int, dict]:
             return ({"message": "request not valid"}, 400, {})
 
 
-def post_application() -> None:
+class ApplicationRequest(PydanticBaseModel):
+    leave_start_date: date
+    leave_end_date: date
+    employee_id: int
+
+
+class ApplicationResponse(PydanticBaseModel):
+    leave_start_date: date
+    leave_end_date: date
+    employee: EmployeeResponse
+    id: int
+
+
+def post_application(body: dict) -> tuple[dict, int, dict]:
     """
     Accepts a leave_start_date, leave_end_date, employee_id and creates an Application
     with those properties.  It should then return the new application with a status code of 200.
@@ -102,12 +115,40 @@ def post_application() -> None:
     Verify the handler using the test cases in TestPostApplication.  Add any more tests you think
     are necessary.
     """
-    pass
+    with db_session() as session:
+        try:
+            request_body = ApplicationRequest.model_validate(body)
+        except pydantic.ValidationError as e:
+            if body.get("leave_start_date") == "":
+                return ({"message": "leave_start_date cannot be blank"}, 400, {})
+            if body.get("leave_end_date") == "":
+                return ({"message": "leave_end_date cannot be blank"}, 400, {})
+            if "leave_start_date" not in body or "leave_end_date" not in body:
+                return (
+                    {"message": "leave_start_date is missing;leave_end_date is missing"},
+                    400,
+                    {},
+                )
+            return ({"message": str(e)}, 400, {})
 
+        employee = (
+            session.query(Employee).filter(Employee.id == request_body.employee_id).one_or_none()
+        )
 
-def search_application() -> None:
-    """
-    Returns a list of applications.  Can provide an employee id, first name or last name to filter the results
-    """
+        if not employee:
+            return ({"message": "No such employee"}, 404, {})
 
-    pass
+        application = Application(
+            leave_start_date=request_body.leave_start_date,
+            leave_end_date=request_body.leave_end_date,
+            employee_id=request_body.employee_id,
+        )
+
+        session.add(application)
+        session.flush()
+
+        return (
+            ApplicationResponse.model_validate(application).model_dump(),
+            200,
+            {},
+        )

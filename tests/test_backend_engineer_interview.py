@@ -76,6 +76,48 @@ class TestPostApplication:
             == "leave_start_date is missing;leave_end_date is missing"
         )
 
+    def test_post_application_invalid_employee(self: Self, test_client: TestClient) -> None:
+        application_response = test_client.post(
+            "/v1/application",
+            json={
+                "leave_start_date": "2021-01-01",
+                "leave_end_date": "2021-02-01",
+                "employee_id": 99,
+            },
+        )
+        assert application_response.status_code == 404
+        assert application_response.json()["message"] == "No such employee"
+
+    def test_post_application_missing_leave_start_date_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        application_response = test_client.post(
+            "/v1/application",
+            json={
+                "leave_start_date": "",
+                "leave_end_date": "2021-02-01",
+                "employee_id": 1,
+            },
+        )
+
+        assert application_response.status_code == 400
+        assert application_response.json()["message"] == "leave_start_date cannot be blank"
+
+    def test_post_application_missing_leave_end_date_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        application_response = test_client.post(
+            "/v1/application",
+            json={
+                "leave_start_date": "2021-01-01",
+                "leave_end_date": "",
+                "employee_id": 1,
+            },
+        )
+
+        assert application_response.status_code == 400
+        assert application_response.json()["message"] == "leave_end_date cannot be blank"
+
 
 def test_version() -> None:
     assert __version__ == "0.1.0"

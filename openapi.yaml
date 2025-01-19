@@ -113,3 +113,55 @@ paths:
                                     type: string
                                 last_name:
                                     type: string
+    /application:
+        post:
+            tags:
+                - Test Endpoints
+            summary: Create a new application
+            operationId: backend_engineer_interview.handlers.post_application
+            responses:
+                '200':
+                    description: Application created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    id:
+                                        type: integer
+                                        example: 1
+                                    employee_id:
+                                        type: integer
+                                        example: 1
+                                    leave_start_date:
+                                        type: string
+                                        format: date
+                                        example: '2022-03-11'
+                                    leave_end_date:
+                                        type: string
+                                        format: date
+                                        example: '2022-03-18'
+                '400':
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                employee_id:
+                                    type: integer
+                                leave_start_date:
+                                    type: string
+                                    format: date
+                                leave_end_date:
+                                    type: string
+                                    format: date
+        
