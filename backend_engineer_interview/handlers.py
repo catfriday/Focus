@@ -131,7 +131,7 @@ def post_application(body: dict) -> tuple[dict, int, dict]:
                 )
             return ({"message": str(e)}, 400, {})
 
-        employee = (
+        employee: Optional[Employee] = (
             session.query(Employee).filter(Employee.id == request_body.employee_id).one_or_none()
         )
 
@@ -178,9 +178,9 @@ def search_application() -> None:
     `curl http://localhost:8000/v1/application?search=Lennon` should return all applications for employees with the last name Lennon.
     """
     with db_session() as session:
-        search = request.args.get("search", "")
-        offset = int(request.args.get("offset", 0))
-        limit = int(request.args.get("limit", 10))
+        search: Optional[str] = request.args.get("search", "")
+        offset: int = int(request.args.get("offset", 0))
+        limit: int = int(request.args.get("limit", 10))
 
         query = session.query(Application).join(Employee)
         if search:
