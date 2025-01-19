@@ -119,5 +119,79 @@ class TestPostApplication:
         assert application_response.json()["message"] == "leave_end_date cannot be blank"
 
 
+class TestSearchApplications:
+    def test_search_applications_returns_all_applications_without_search_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        response = test_client.get("/v1/application")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 3
+
+    def test_search_applications_filters_return_with_id_search_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        response = test_client.get("/v1/application?search=1")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 1
+        assert applications[0]["id"] == 1
+
+    def test_search_applications_filters_return_with_employee_first_name_search_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        response = test_client.get("/v1/application?search=John")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 1
+        assert applications[0]["employee"]["first_name"] == "John"
+
+    def test_search_applications_filters_return_with_employee_last_name_search_value(
+        self: Self, test_client: TestClient
+    ) -> None:
+        response = test_client.get("/v1/application?search=Lennon")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 1
+        assert applications[0]["employee"]["last_name"] == "Lennon"
+
+    def test_search_applications_returns_empty_list_when_no_results(
+        self: Self, test_client: TestClient
+    ) -> None:
+        response = test_client.get("/v1/application?search=notfound")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 0
+
+    def test_search_applications_pagination(self: Self, test_client: TestClient) -> None:
+        response = test_client.get("/v1/application?limit=1")
+        applications = response.json().get("applications")
+
+        assert response.status_code == 200
+        assert len(applications) == 1
+        assert response.json().get("count") == 3
+
+        # test that the next link works
+        next_response = test_client.get(response.json().get("next"))
+        next_applications = next_response.json().get("applications")
+
+        assert next_response.status_code == 200
+        assert len(next_applications) == 1
+        assert next_applications[0]["id"] == 2
+
+        # test that the now previous link works
+        prev_response = test_client.get(next_response.json().get("prev"))
+        prev_applications = prev_response.json().get("applications")
+
+        assert prev_response.status_code == 200
+        assert len(prev_applications) == 1
+        assert prev_applications[0]["id"] == 1
+
+
 def test_version() -> None:
     assert __version__ == "0.1.0"
